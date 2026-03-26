@@ -33,9 +33,10 @@ Also includes PyTorch 2.6 compatibility fix (`weights_only=False`) for all `torc
 
 ### From release (recommended)
 
-Download the latest release from the [Releases](https://github.com/mustar22/wokada-pfs/releases) page.
+Download the precompiled Windows CUDA release directly from Hugging Face:
+**[📥 Download wokada-pfs.zip](https://huggingface.co/MUSTAR/wokada-pfs-prebuilt/resolve/main/wokada-pfs.zip?download=true)**
 
-Download the latest compiled release from the [Releases](https://github.com/mustar22/wokada-pfs/releases) page. *(coming soon)*
+*Just extract the folder and run `MMVCServerSIO.exe` to start the server.*
 
 Requires [VAC Lite by Muzychenko](https://software.muzychenko.net/freeware/vac470lite.zip).
 
