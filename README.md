@@ -26,8 +26,8 @@ Also includes PyTorch 2.6 compatibility fix (`weights_only=False`) for all `torc
 
 | Input | PFS 0 (baseline) | PFS 2 (recommended) | PFS 5 |
 |-------|-----------------|---------------------|-------|
-| [test1_input](#) | [test1_pfs0](samples/test1_out_pfs0.wav) | [test1_pfs2](samples/test1_out_pfs2.wav) | [test1_pfs5](samples/test1_out_pfs5.wav) |
-| [test2_input](#) | [test2_pfs0](samples/test2_out_pfs0.wav) | [test2_pfs2](samples/test2_out_pfs2.wav) | [test2_pfs5](samples/test2_out_pfs5.wav) |
+| — | [test1_pfs0](samples/test_out_pfs0.wav) | [test1_pfs2](samples/test_out_pfs2.wav) | [test1_pfs5](samples/test_out_pfs5.wav) |
+| [test2_input](samples/test2_input.wav) | [test2_pfs0](samples/test2_out_pfs0.wav) | [test2_pfs2](samples/test2_out_pfs2.wav) | [test2_pfs5](samples/test2_out_pfs5.wav) |
 
 ## Installation
 
