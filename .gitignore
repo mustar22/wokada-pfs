@@ -72,5 +72,10 @@ server/test_ddpn_v1_v2.json
 server/vcclient.log
 start_trainer.sh
 
+# wokada-pfs additions
+server/assets.json
+client/demo/node_modules/
+client/lib/node_modules/
+
 # venv
 venv/

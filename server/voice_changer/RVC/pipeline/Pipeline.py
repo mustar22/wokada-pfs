@@ -35,7 +35,6 @@ class Pipeline:
 
     index: IndexIVFFlat | None
     index_reconstruct: torch.Tensor | None
-    # feature: Any | None
 
     model_sr: int
     device: torch.device
@@ -78,6 +77,12 @@ class Pipeline:
 
         self.resamplers = {}
 
+        # Cache STFT window for pre-formant nudge to avoid reallocating every chunk
+        self._stft_window: torch.Tensor | None = None
+        self._stft_n_fft: int = 512
+        self._stft_hop: int = 160   # 10ms at 16kHz
+        self._stft_win: int = 512
+
     def make_onnx_upscaler(self, dim_size: int):
         # Inputs
         input = make_tensor_value_info('in', TensorProto.FLOAT16 if self.is_half else TensorProto.FLOAT, [1, dim_size, None])
@@ -111,6 +116,94 @@ class Pipeline:
 
     def setPitchExtractor(self, pitchExtractor: PitchExtractor):
         self.pitchExtractor = pitchExtractor
+
+    def _get_stft_window(self) -> torch.Tensor:
+        """Lazily initialize and cache the STFT window on the correct device."""
+        if self._stft_window is None or self._stft_window.device != self.device:
+            self._stft_window = torch.hann_window(self._stft_win, device=self.device)
+        return self._stft_window
+
+    def _pre_formant_nudge(self, audio: torch.Tensor, semitones: float) -> torch.Tensor:
+        """
+        Pre-ContentVec spectral envelope nudge for M2F preprocessing.
+
+        Gently shifts the spectral envelope toward female voice characteristics
+        BEFORE feature extraction by ContentVec/HuBERT. This reduces the acoustic
+        distance the model needs to bridge during conversion.
+
+        F0 (fundamental frequency / pitch) is NOT touched here — it is handled
+        entirely by the existing pitch pipeline (extract_pitch + f0_up_key).
+        Only the spectral envelope shape is modified.
+
+        Positive semitones = shift toward higher formants = female direction.
+        Recommended range: 0.5 to 3.0 semitones for M2F.
+        At 0.0 this function is never called (skipped in exec).
+
+        Args:
+            audio:    1D tensor, 16kHz, fp16 or fp32, on GPU
+            semitones: shift strength in semitones (float, positive = female direction)
+
+        Returns:
+            Processed audio tensor — same shape, dtype, and device as input.
+        """
+        original_dtype = audio.dtype
+
+        # STFT requires float32
+        audio_f32 = audio.float()
+
+        window = self._get_stft_window()
+
+        # Forward STFT — complex output shape: [freq_bins, time_frames]
+        stft = torch.stft(
+            audio_f32,
+            n_fft=self._stft_n_fft,
+            hop_length=self._stft_hop,
+            win_length=self._stft_win,
+            window=window,
+            return_complex=True,
+        )
+
+        magnitude = stft.abs()       # [freq_bins, time_frames]
+        phase = stft.angle()         # [freq_bins, time_frames]
+
+        freq_bins = magnitude.shape[0]  # 257 for n_fft=512
+
+        # Stretch factor: positive semitones = compress source bins
+        # = shift spectral energy toward higher frequencies
+        stretch = 2.0 ** (semitones / 12.0)
+
+        # For each output bin, find where it maps back in the original spectrum
+        orig_bins = torch.arange(freq_bins, device=audio.device, dtype=torch.float32)
+        source_bins = orig_bins / stretch
+        source_bins = source_bins.clamp(0.0, freq_bins - 1.0)
+
+        # Linear interpolation along frequency axis
+        floor_bins = source_bins.floor().long()
+        ceil_bins = (floor_bins + 1).clamp(max=freq_bins - 1)
+        frac = (source_bins - floor_bins.float()).unsqueeze(1)  # [freq_bins, 1]
+
+        # Interpolate magnitude only — preserve original phase
+        # This avoids the phase artifacts that aggressive processing would introduce
+        mag_nudged = (
+            magnitude[floor_bins] * (1.0 - frac) +
+            magnitude[ceil_bins] * frac
+        )
+
+        # Reconstruct complex STFT: nudged magnitude + original phase
+        stft_out = torch.polar(mag_nudged, phase)
+
+        # Inverse STFT — recover waveform at original length
+        audio_out = torch.istft(
+            stft_out,
+            n_fft=self._stft_n_fft,
+            hop_length=self._stft_hop,
+            win_length=self._stft_win,
+            window=window,
+            length=audio_f32.shape[0],
+        )
+
+        # Return same dtype as input (fp16 or fp32)
+        return audio_out.to(original_dtype)
 
     def extract_pitch(self, audio: torch.Tensor, pitch: torch.Tensor | None, pitchf: torch.Tensor | None, f0_up_key: int, formant_shift: float) -> tuple[torch.Tensor, torch.Tensor]:
         f0 = self.pitchExtractor.extract(
@@ -175,6 +268,7 @@ class Pipeline:
         skip_head: int,
         return_length: int,
         protect: float = 0.5,
+        pre_formant_shift: float = 0.0,
     ) -> torch.Tensor:
         with Timer2("Pipeline-Exec", False) as t:  # NOQA
             # 16000のサンプリングレートで入ってきている。以降この世界は16000で処理。
@@ -185,8 +279,18 @@ class Pipeline:
             t.record("pre-process")
 
             # ピッチ検出
+            # NOTE: pitch extraction uses original audio — pre_formant_nudge
+            # only affects the embedder input below, not F0 extraction.
             pitch, pitchf = self.extract_pitch(audio[silence_front:], pitch, pitchf, f0_up_key, formant_shift) if self.use_f0 else (None, None)
             t.record("extract-pitch")
+
+            # Pre-ContentVec formant nudge (M2F preprocessing)
+            # Shifts spectral envelope toward female characteristics BEFORE
+            # feature extraction. Reduces acoustic distance the model must bridge.
+            # F0 is untouched — handled entirely by extract_pitch above.
+            # Set preFormantShift = 0 in settings to disable (default behavior).
+            if pre_formant_shift != 0.0:
+                audio = self._pre_formant_nudge(audio, pre_formant_shift)
 
             # embedding
             feats = self.embedder.extract_features(audio.view(1, -1), embOutputLayer, useFinalProj)
@@ -203,7 +307,6 @@ class Pipeline:
                 skip_offset = skip_head // 2
                 index_audio = feats[0][skip_offset :]
 
-                # TODO: kは調整できるようにする
                 index_audio = self._search_index(index_audio.float(), 8).unsqueeze(0)
                 if self.is_half:
                     index_audio = index_audio.half()
@@ -215,9 +318,6 @@ class Pipeline:
             if self.use_f0:
                 pitch = pitch[:, -audio_feats_len:]
                 pitchf = pitchf[:, -audio_feats_len:] * (formant_length / return_length)
-                # pitchの推定が上手くいかない(pitchf=0)場合、検索前の特徴を混ぜる
-                # pitchffの作り方の疑問はあるが、本家通りなので、このまま使うことにする。
-                # https://github.com/w-okada/voice-changer/pull/276#issuecomment-1571336929
                 if is_active_index and use_protect:
                     # FIXME: Another interpolate on feats is a big performance hit.
                     feats_orig = self._upscale(feats_orig)[:, :audio_feats_len, :]
@@ -231,11 +331,12 @@ class Pipeline:
 
             sid = torch.tensor([sid], device=self.device, dtype=torch.int64)
             t.record("mid-precess")
+
             # 推論実行
             out_audio = self.inferencer.infer(feats, p_len, pitch, pitchf, sid, skip_head, return_length, formant_length).float()
             t.record("infer")
 
-            # Formant shift sample rate adjustment
+            # Formant shift sample rate adjustment (existing post-inference formant shift)
             scaled_window = int(np.floor(formant_factor * self.model_window))
             if scaled_window != self.model_window:
                 if scaled_window not in self.resamplers:

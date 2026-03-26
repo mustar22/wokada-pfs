@@ -271,6 +271,7 @@ class RVCr2(VoiceChangerModel):
             self.skip_head,
             self.return_length,
             self.settings.protect,
+            self.settings.preFormantShift,  # <-- ADD THIS
         )
 
         # FIXME: Why the heck does it require another sqrt to amplify the volume?

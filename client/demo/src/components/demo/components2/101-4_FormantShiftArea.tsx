@@ -24,28 +24,65 @@ export const FormantShiftArea = (_props: FormantShiftAreaProps) => {
             await serverSetting.updateServerSettings({ ...serverSetting.serverSetting, formantShift: val });
         };
 
+        const currentPreFormantShift = serverSetting.serverSetting.preFormantShift ?? 0;
+        const preFormantShiftValueUpdatedAction = async (val: number) => {
+            await serverSetting.updateServerSettings({ ...serverSetting.serverSetting, preFormantShift: val });
+        };
+
         return (
-            <div className="character-area-control">
-                <div className="character-area-control-title"><a className="hint-text" data-tooltip-id="hint" data-tooltip-content="Formant shift alters harmonic frequencies and changes the voice timbre without affecting the pitch.">FORMANT SHIFT</a>:</div>
-                <div className="character-area-control-field">
-                    <div className="character-area-slider-control">
-                        <span className="character-area-slider-control-kind"></span>
-                        <span className="character-area-slider-control-slider">
-                            <input
-                                type="range"
-                                min="-5"
-                                max="5"
-                                step="0.1"
-                                value={currentFormantShift}
-                                onChange={(e) => {
-                                    formantShiftValueUpdatedAction(Number(e.target.value));
-                                }}
-                            ></input>
-                        </span>
-                        <span className="character-area-slider-control-val">{currentFormantShift}</span>
+            <>
+                <div className="character-area-control">
+                    <div className="character-area-control-title">
+                        <a className="hint-text" data-tooltip-id="hint" data-tooltip-content="Formant shift alters harmonic frequencies and changes the voice timbre without affecting the pitch.">
+                            FORMANT SHIFT
+                        </a>:
+                    </div>
+                    <div className="character-area-control-field">
+                        <div className="character-area-slider-control">
+                            <span className="character-area-slider-control-kind"></span>
+                            <span className="character-area-slider-control-slider">
+                                <input
+                                    type="range"
+                                    min="-5"
+                                    max="5"
+                                    step="0.1"
+                                    value={currentFormantShift}
+                                    onChange={(e) => {
+                                        formantShiftValueUpdatedAction(Number(e.target.value));
+                                    }}
+                                ></input>
+                            </span>
+                            <span className="character-area-slider-control-val">{currentFormantShift}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
+
+                <div className="character-area-control">
+                    <div className="character-area-control-title">
+                        <a className="hint-text" data-tooltip-id="hint" data-tooltip-content="Pre-formant shift nudges the spectral envelope toward female characteristics BEFORE feature extraction. Use for M2F conversion quality improvement. Range: 0 to 3 semitones recommended.">
+                            PRE F.SHIFT
+                        </a>:
+                    </div>
+                    <div className="character-area-control-field">
+                        <div className="character-area-slider-control">
+                            <span className="character-area-slider-control-kind"></span>
+                            <span className="character-area-slider-control-slider">
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="5"
+                                    step="0.1"
+                                    value={currentPreFormantShift}
+                                    onChange={(e) => {
+                                        preFormantShiftValueUpdatedAction(Number(e.target.value));
+                                    }}
+                                ></input>
+                            </span>
+                            <span className="character-area-slider-control-val">{currentPreFormantShift}</span>
+                        </div>
+                    </div>
+                </div>
+            </>
         );
     }, [serverSetting.serverSetting, serverSetting.updateServerSettings, selected]);
 

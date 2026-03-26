@@ -92,6 +92,7 @@ export const ServerSettingKey = {
 
     tran: "tran",
     formantShift: "formantShift",
+    preFormantShift: "preFormantShift",  // Added lah
     useONNX: "useONNX",
 
     silentThreshold: "silentThreshold",
@@ -141,6 +142,7 @@ export type VoiceChangerServerSetting = {
 
     tran: number;
     formantShift: number;
+    preFormantShift: number;  // Added 2 lah
     useONNX: number;
 
     silentThreshold: number;
@@ -273,6 +275,7 @@ export const DefaultServerSetting: ServerInfo = {
 
     tran: 0,
     formantShift: 0,
+    preFormantShift: 0,  // Added 3 lah
     useONNX: 0,
 
     silentThreshold: 0,

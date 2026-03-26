@@ -357,6 +357,16 @@ class VoiceChangerSettings:
     def formantShift(self, shift_size: str):
         self._formantShift = float(shift_size)
 
+    _preFormantShift: float = 0.0  
+
+    @property
+    def preFormantShift(self):
+        return self._preFormantShift
+
+    @preFormantShift.setter
+    def preFormantShift(self, shift_size: str):
+        self._preFormantShift = float(shift_size)
+
     @property
     def useONNX(self):
         return self._useONNX

@@ -81,7 +81,7 @@ def get_edition():
 
 def get_version():
     if not os.path.exists(VERSION_FILE):
-        return 'Development'
+        return 'v1.0.0-obliterated'
     with open(VERSION_FILE, 'r') as f:
         return f.read()
 

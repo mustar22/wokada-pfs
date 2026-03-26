@@ -11,8 +11,8 @@
 :root {
     --title-color: #FFF;
     --text-color: #333;
-    --company-color1: rgba(64, 119, 187, 1);
-    --company-color2: rgba(29, 47, 78, 1);
+    --company-color1: rgba(200, 30, 30, 1);
+    --company-color2: rgba(60, 10, 10, 1);
     --company-color3: rgba(255, 255, 255, 1);
 
     --sidebar-transition-time: 0.2s;
@@ -73,8 +73,8 @@ body {
     :root {
         --title-color: #dedede;
         --text-color: #dedede;
-        --company-color1: rgba(64, 119, 187, 1);
-        --company-color2: rgb(14, 25, 45);
+        --company-color1: rgb(187, 64, 64);
+        --company-color2: rgb(20, 10, 10);
         --company-color3: rgb(20, 20, 20);
 
         --button-passthru-active-border: 1px solid #a80000;
