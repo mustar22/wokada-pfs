@@ -53,6 +53,17 @@ cd ../../server
 python main.py
 ```
 
+## How it works
+
+RVC's ContentVec embedder is supposed to extract speaker-independent phonetic features, but in practice it leaks — strongly male inputs produce embeddings with residual male timbral characteristics. FAISS retrieval then finds suboptimal matches in the female voice index, and the decoder has to compensate harder, producing less natural output.
+
+The idea came from working with WAN 2.2 video generation — specifically the observation that pre-conditioning input toward the target domain before feature extraction produces smoother, more natural results than letting the model bridge the full distance alone. Applied to voice: instead of feeding raw male audio directly into ContentVec, nudge it toward female acoustic territory first.
+
+We apply an STFT-based spectral envelope stretch to the 16kHz audio **before** ContentVec sees it, shifting formant energy upward toward female characteristics. F0 extraction happens before the nudge and is untouched. Phase is preserved throughout — only the magnitude spectrum is stretched.
+
+The result: ContentVec receives a signal that's acoustically closer to female speech, finds better FAISS matches, and the decoder synthesizes more convincing output with less strain. Tested clean across the full 0–5 semitone range with no observed quality degradation on two independent setups (RTX 4070 Ti and RTX 5070).
+
+
 ## Credits
 
 - [w-okada](https://github.com/w-okada/voice-changer) — original voice changer
