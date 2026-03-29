@@ -1,4 +1,5 @@
 @echo off
 cd /d "%~dp0server"
-python main.py
+set PYTHONPATH=%~dp0server
+..\python\python.exe main.py
 pause

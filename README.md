@@ -31,10 +31,25 @@ Also includes PyTorch 2.6 compatibility fix (`weights_only=False`) for all `torc
 
 ## Installation
 
-### From release (recommended)
+### Portable (recommended for most users)
 
-Download the precompiled Windows CUDA release directly from Hugging Face:
+No Python required. Extract and run.
+
+**[📥 Download wokada-pfs-portable.zip](https://huggingface.co/MUSTAR/wokada-pfs-prebuilt/resolve/main/wokada-pfs-portable.zip?download=true)**
+
+1. Extract the zip
+2. Run `install.bat` once to install dependencies
+3. Run `start.bat` to launch
+
+Requires [VAC Lite by Muzychenko](https://software.muzychenko.net/freeware/vac470lite.zip).
+
+### Standalone (for users with Python 3.10 already installed)
+
 **[📥 Download wokada-pfs.zip](https://huggingface.co/MUSTAR/wokada-pfs-prebuilt/resolve/main/wokada-pfs.zip?download=true)**
+
+1. Extract the zip
+2. Install dependencies: `pip install -r server/requirements-common.txt -r server/requirements-cuda.txt`
+3. Run `start.bat` to launch
 
 Requires [VAC Lite by Muzychenko](https://software.muzychenko.net/freeware/vac470lite.zip).
 

@@ -79,3 +79,7 @@ client/lib/node_modules/
 
 # venv
 venv/
+
+# portable python
+python/
+get-pip.py
